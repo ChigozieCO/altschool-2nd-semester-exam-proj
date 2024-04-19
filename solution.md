@@ -62,3 +62,16 @@ To provision the VMs I ran the command
 vagrant up
 ```
 
+From the images below you can see that both my master and slave machines were successfully provisioned.
+
+(image 3 and 4 )
+
+To access it and start working with it I ssh into then by specifying their names, as shown below
+
+```sh
+vagrant ssh master
+vagrant ssh slave
+```
+
+(images 5)
+
