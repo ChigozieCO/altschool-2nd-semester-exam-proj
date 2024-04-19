@@ -275,3 +275,38 @@ Enabling the rewrite module in Apache (`a2enmod rewrite`) is typically necessary
 Laravel, like many modern PHP frameworks, relies on URL rewriting to route requests through its front controller (`index.php`). This allows for cleaner and more expressive URLs without the need for file extensions or query parameters.
 
 The newly installed PHP 8.2 module won't be automatically enabled after installation. After installing PHP 8.2, we'll still need to enable the PHP 8.2 module for Apache to use it. You can do this using the `a2enmod` command as shown above.
+
+# Install Git
+
+We will clone the GitHub repo that has the Laravel application and so we need to ensure that we have Git installed in our server. If Git isn't installed we will install it.
+
+I'd use an if statement for this logic:
+
+```sh
+# Check if git is installed, if it isn't, install it.
+if ! command -v git &> /dev/null; then
+  echo "installing git ================================================================="
+  sudo apt update
+  sudo apt install -y git
+  echo "Git Installation complete ======================================================="
+  echo
+fi
+```
+
+# Install Composer
+
+Composer is a PHP dependency manager that facilitates the download of PHP libraries in our projects. Composer both works great with and makes it much easier to install Laravel.
+
+I will first download the Composer installer script from the composer site using `curl`, pipe it directly to php, and execute it.
+
+Then move it into a location on my server's PATH so that it is globally accessible and lastly make it executable.
+
+```sh
+# Install composer, composer is required to install laravel dependencies
+# Use curl to download the Composer installer script and pipe it directly to php for execution.
+curl -sS https://getcomposer.org/installer | php
+# Move the script to a location in your path so that it is executable globally
+sudo mv composer.phar /usr/local/bin/composer
+# Make composer executable
+sudo chmod +x /usr/local/bin/composer
+```
