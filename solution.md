@@ -357,6 +357,24 @@ The `php artisan key:generate` command is typically used in Laravel projects to 
 
 When you run `php artisan key:generate`, Laravel generates a new random key and updates the APP_KEY value in the `.env` file of your Laravel project with this new key.
 
+### Change Permissions on Storage and Bootstrap Directory
+
+Honestly this step could have been carried out right before we create our `.env` file and generate our APP_KEY, immediately after cloning the repo but whatever, it hurts no one.
+
+If your `/var/www/html/storage` file and your `/var/www/html/bootstrap/cache` files do not belong to the `www-data` user you experience the error message below because the `www-data` user which Apache uses for web related activities won't have the necessary permissions that Laravel needs to fully function.
+
+(image 7)
+
+Add the below to your script to change the ownership of those directories.
+
+```sh
+# Set permission for the storage and bootstrap directories
+sudo chown -R www-data /var/www/html/storage
+sudo chown -R www-data /var/www/html/bootstrap/cache
+echo "Permission changed for the storage and bootstrap directories ===================================================="
+```
+
+### Update ENV
 We also need to update the `.env` file with our database credentials and update the `APP_URL` value. Presently it points to the localhost as the APP_URL but I need it to point to my server's IP address so that I can access the Laravel application from my IP address and not just localhost (127.0.0.1).
 
 Like you might have already noticed I am trying to make this script as unattended as possible and so I will use `sed` to search and replace the `APP_URL` line in the `.env` file with the actual value I want and then echo the other database credentials I want in the file.
@@ -388,4 +406,56 @@ sed -i "s/^DB_CONNECTION=.*/DB_CONNECTION=mysql/" /var/www/html/.env
 
 # Add additional database configuration parameters
 echo -e "\nDB_HOST=127.0.0.1\nDB_PORT=3306\nDB_DATABASE=laravel\nDB_USERNAME=root\nDB_PASSWORD=\"\$MYSQL_ROOT_PASSWORD\"" >> /var/www/html/.env
+```
+
+# Adjust the VirtualHost File
+
+Usually you will find your `index.html` or `index.php` file directly in the `/var/www/html` directory but with laravel it is different, the `index.php` file is located in the `public` directory and so we have to tell apache to route the traffic into the public directory so it can find our home page there and serve that page by default.
+
+We just have to add `/public` at the end of the DocumentRoot and at other places in the virtual host file where we have to define the document root of our project.
+
+Add the below to your script.
+
+```sh
+SERVER_ADMIN="<your email address>"
+DOCUMENT_ROOT="/var/www/html/public"
+
+# Update the 000-default.conf file
+sudo sed -i -E "s/#?\s*ServerName .*/ServerName $ip_address/" /etc/apache2/sites-available/000-default.conf
+sudo sed -i "s/ServerAdmin .*/ServerAdmin $SERVER_ADMIN/" /etc/apache2/sites-available/000-default.conf
+sudo sed -i "s|DocumentRoot .*|DocumentRoot $DOCUMENT_ROOT|" /etc/apache2/sites-available/000-default.conf
+
+# Restart Apache to apply changes
+sudo systemctl restart apache2
+```
+
+# Run Database Migration
+The last step is to run your migrations to build your application’s database tables. This step is necessary if you don't want to get the error message below
+
+(image 8)
+
+Ideally when you run the `migrate` command, as we will next, your database gets created (if it previously didn't exist) along with the tables and necessary schema. 
+
+(image 10)
+
+Note however that this command does not have a built-in `-y` flag to automatically accept the database creation and so will require use input which is why I went back and added the creation of the database in the MySQL installation (you don't have to sweat it).
+
+Add the following to your script:
+
+```sh
+# Run outstanding migrations
+php artisan migrate
+echo "Database migrated successfully =================================================================================="
+echo
+echo "LAMP stack deployment complete, Laravel Repo fully cloned and configured ========================================"
+```
+
+And that's it for the bash script, save the changes and close the file
+
+# Make the Script Executable
+
+To be able to run the script we need to make it executable. Use the command below.
+
+```sh
+chmod +x deploylamp.sh
 ```
