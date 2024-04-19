@@ -340,3 +340,52 @@ git clone https://github.com/laravel/laravel.git .
 # Install dependencies with composer
 composer install
 ```
+
+# Update ENV File and Generate an Encryption Key
+We need to create a `.env` file after cloning the git repository or starting a new Laravel project. The `.env.example` file is typically copied, and the contents of the copied `.env` file are then updated.
+
+The following commands are what we will use to copy the file from `.env.example` to `.env` and generate an encryption key. So add the below to your script:
+
+```sh
+# Update the env file and generate an encryption key
+cd /var/www/html
+cp .env.example .env
+php artisan key:generate
+```
+
+The `php artisan key:generate` command is typically used in Laravel projects to generate a new application key. This key is used for encryption and hashing within the Laravel application, such as encrypting session data and generating secure hashes.
+
+When you run `php artisan key:generate`, Laravel generates a new random key and updates the APP_KEY value in the `.env` file of your Laravel project with this new key.
+
+We also need to update the `.env` file with our database credentials and update the `APP_URL` value. Presently it points to the localhost as the APP_URL but I need it to point to my server's IP address so that I can access the Laravel application from my IP address and not just localhost (127.0.0.1).
+
+Like you might have already noticed I am trying to make this script as unattended as possible and so I will use `sed` to search and replace the `APP_URL` line in the `.env` file with the actual value I want and then echo the other database credentials I want in the file.
+
+This will allow my updating the `env` file be as unattended as possible. Add the following to your script, ensure to replace with your own credentials where necessary.
+
+```sh
+# Change the APP_URL value to be the IP address of your server
+# Get the IP address of the machine
+ip_address=$(hostname -I | awk '{print $2}')
+
+# Update the value of APP_URL in the .env file
+sed -i "s/^APP_URL=.*/APP_URL=http:\/\/$ip_address/" /var/www/html/.env
+```
+
+- `hostname -I | awk '{print $1}'` retrieves the IP address of the machine.
+
+- `hostname -I` gets a list of IP addresses associated with the hostname, and `awk '{print $2}'` selects the second IP address from the list. (I prefer to use the second that comes up on my server as that is the unique one for me, you can change 2 to 1 as you see fit).
+
+We also need to add some database configuration parameters, we will `sed` to replace what needs replacing and echo the new items into the file.
+
+Add the following to your script
+
+```sh
+# Add additional database config
+
+# Update the value of DB_CONNECTION to mysql
+sed -i "s/^DB_CONNECTION=.*/DB_CONNECTION=mysql/" /var/www/html/.env
+
+# Add additional database configuration parameters
+echo -e "\nDB_HOST=127.0.0.1\nDB_PORT=3306\nDB_DATABASE=laravel\nDB_USERNAME=root\nDB_PASSWORD=\"\$MYSQL_ROOT_PASSWORD\"" >> /var/www/html/.env
+```
