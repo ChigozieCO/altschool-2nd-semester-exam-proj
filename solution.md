@@ -203,3 +203,75 @@ else
     echo
 fi
 ```
+
+## Install PHP
+
+PHP is a general-purpose scripting language, well-suited for Web development since PHP scripts can be embedded into HTML.
+
+### Disable any PHP Module you Might Have Previously Installed 
+
+Before installing PHP I will disable any php module I had previously installed, I found this step necessary because while testing my script, after successfully deploying the Laravel application the app didn't come up I kept getting the error shown below.
+
+(image 6)
+
+Upon further investigation after running `apachectl -M | grep php` I found out that apache was using a lower version of php (7.4) not the latest 8.2 I had just installed.
+
+```sh
+$ apachectl -M | grep php
+ php7_module (shared)
+```
+
+To save you that stress, first disable any old one that might exist on your server before installing the latest version using the if statement below. Add to your script
+
+```sh
+# Check if any PHP module is enabled
+if apachectl -M 2>/dev/null | grep -q 'php'; then
+    # Disable all PHP modules
+    sudo a2dismod php*
+    echo "All PHP modules disabled =========================================================="
+else
+    echo "No PHP modules found =========================================================="
+fi
+```
+
+- The script uses `apachectl -M` to list all enabled Apache modules.
+
+- If a PHP module is found, the script disables all PHP modules using `sudo a2dismod php*`, which disables any module starting with "php". This is a precautionary measure in case there are multiple PHP versions installed.
+
+- If no PHP modules are found, it prints a message indicating that no PHP modules were found.
+
+### Install the Latest Version
+
+Although PHP is available on Ubuntu Linux Apt repository, to be able to get the latest version I will add the OndreJ PPA and install it from there.
+
+I will also be installing some necessary dependencies that MySQL needs to be able to work with PHP.
+
+Add the following to the script:
+
+```sh
+# Install dependencies first
+sudo apt install -y software-properties-common apt-transport-https ca-certificates lsb-release
+# Add the OndreJ PPA to allow us install the latest version of PHP
+sudo add-apt-repository -y ppa:ondrej/php
+sudo apt update
+# Install php and necessary modules
+sudo apt install -y php8.2 php8.2-mysql php8.2-cli php8.2-gd php8.2-zip php8.2-mbstring php8.2-xmlrpc php8.2-soap php8.2-xml php8.2-curl php8.2-dom || { echo "Error installing php and php modules"; exit 1; }
+echo "Successful installed PHP and necessary modules =================================="
+echo
+```
+
+### Enable URL Rewriting and the new PHP module
+
+```sh
+# Enable Apache's URL rewriting and restart Apache
+sudo a2enmod rewrite
+sudo a2enmod php8.2
+sudo service apache2 restart
+echo "URL rewrite and PHP module enabled and Apache restarted ========================================================================"echo
+```
+
+Enabling the rewrite module in Apache (`a2enmod rewrite`) is typically necessary for Laravel applications and many other web applications that use URL rewriting for routing and clean URLs.
+
+Laravel, like many modern PHP frameworks, relies on URL rewriting to route requests through its front controller (`index.php`). This allows for cleaner and more expressive URLs without the need for file extensions or query parameters.
+
+The newly installed PHP 8.2 module won't be automatically enabled after installation. After installing PHP 8.2, we'll still need to enable the PHP 8.2 module for Apache to use it. You can do this using the `a2enmod` command as shown above.
