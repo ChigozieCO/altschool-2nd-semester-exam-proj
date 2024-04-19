@@ -145,3 +145,61 @@ echo
 ```
 
 Once the installation is complete, the MySQL server usually starts automatically.
+
+## Configure MySQL
+The default configuration of  MySQL is not secure, the root has no password and remote access is possible for the root user, it also comes with a `test` database and an anonymous user, these are the configs that we will be changing.
+
+Ideally we would use the `mysql_secure_installation` script to secure the database but that would require user input and I'm trying to keep this LAMP deployment process as unattended as possible and so I will be using a `here document` that would provide all the necessary responses to the prompts that the script usually presents.
+
+:bulb: **NOTE**
+Another thing to note is that for security purposes I won't be hardcoding my root password in the script. Since this script will be run with Ansible I will save the password in Ansible vault. When we get to the Ansible configuration part of this project you will see how we will walk through the process of adding the password to Ansible vault.
+
+Ansible provides a built-in solution called Ansible Vault for encrypting sensitive data. You can create an encrypted file to store the MySQL root password, and then decrypt it when needed during playbook execution.
+
+The way this will work is that ansible will decrypt the password, save it in a temporary location from which it will be passed as an env variable as `MYSQL_ROOT_PASSWORD` which the bash script will then read and use while running the script.
+
+This way everything is safe and secure. 
+
+Add the below to your script:
+
+```sh
+# Configure MySQL Server automatically, we won't hardcode the root password, it will be read from ansible vault
+echo "Now configuring MySQL Server ======================================="
+
+# Set MySQL root password from environment variable, since this script is run with ansible, ansible will first decrypt the password from it's vault and save it in a temp location from which it will be read.
+MYSQL_ROOT_PASSWORD="$MYSQL_ROOT_PASSWORD"
+
+# Main MySQL configuration
+sudo mysql <<EOF
+CREATE DATABASE IF NOT EXISTS laravel;
+ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '$MYSQL_ROOT_PASSWORD';
+DELETE FROM mysql.user WHERE User='';
+DELETE FROM mysql.user WHERE User='root' AND Host NOT IN ('localhost', '127.0.0.1', '::1');
+DROP DATABASE IF EXISTS test;
+DELETE FROM mysql.db WHERE Db='test' OR Db='test\_%';
+FLUSH PRIVILEGES;
+EOF
+```
+
+The SQL commands in the above part of the script will essentially do what `mysql_secure_installation` does:
+
+- Creates a laravel database that the laravel app would use.
+- Set a new password for the root user.
+- Remove anonymous users.
+- Disallow remote root login.
+- Remove the test database and access to it.
+- Flush privileges to apply the changes.
+
+Lastly we will check if the configuration succeeded or failed and print a message based on the exit code. Add the following to the script:
+
+```sh
+# Check if the configuration was successful or if there was an error and let us know which it is
+if [ $? -ne 0 ]; then
+    echo "Error: Failed to configure MySQL ====-============================================="
+    echo
+    exit 1
+else
+    echo "Successfully configured MySQl ==================================================="
+    echo
+fi
+```
