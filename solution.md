@@ -75,3 +75,54 @@ vagrant ssh slave
 
 (images 5)
 
+# Bash Script to Deploy LAMP Stack
+
+A LAMP stack is is an acronym for the operating system, Linux; the web server, Apache; the database server, MySQL; and the programming language, PHP.
+
+This is a very common stack developers use to build websites and web applications.
+
+The task asked that we write a script that would be used to automate the installation of the LAMP stack. With this script the LAMP stack deployment as well as the Laravel application deployment will be fully automated, this script will be written in a way as not to require any user input at all. I will try to example my logic along the way.
+
+Find the full script (here)[], to create my script create a new file with the vi editor:
+
+```sh
+vi deploylamp.sh
+```
+
+## Install Apache
+
+To begin, I want this script to stop running whenever it encounters an error as the successful deployment of the Laravel application is dependent on all the components of this script being present in the server. To accomplish this we will use the `set -e` command, start you script that way.
+
+```sh
+#!/bin/bash
+
+# This command will make the script immediately close if any command exits with a non-zero status 
+set -e
+```
+
+Next we will update the apt repository so that our packages are up to date.
+
+```sh
+# Update apt repository
+sudo apt update
+```
+
+We finally get to the beginning of the main event, now we will add the command that installs Apache to our script install, as earlier mentioned, apache is a very popular webserver used by developers.
+
+I want the script to stop executing if at any point it encounters an error so I will add the `set -e` command at the top of the script.
+
+To install apache add the command below to your script
+
+```sh
+# Install Apache and handle any errors if any
+echo "Installing Apache ===================================================="
+echo
+
+sudo apt install -y apache2 || { echo "Error installing Apache"; exit 1; }
+echo "Successfully installed apache ======================================="
+echo
+```
+
+The echo commands are there to inform us every step of the way what the script is up to. 
+
+The command `sudo apt install -y apache2 || { echo "Error installing Apache"; exit 1; }` will either install Apache or print an error message depending on whether the installation is successful or not.
