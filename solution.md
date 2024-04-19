@@ -126,3 +126,22 @@ echo
 The echo commands are there to inform us every step of the way what the script is up to. 
 
 The command `sudo apt install -y apache2 || { echo "Error installing Apache"; exit 1; }` will either install Apache or print an error message depending on whether the installation is successful or not.
+
+## Install MySQL
+
+MySQL is a fast, multi-threaded, multi-user, and robust SQL database server. It is intended for mission-critical, heavy-load production systems and mass-deployed software.
+
+Add the below to your bash script.
+
+```sh
+# Install MySQL and handle any errors if any
+echo "Installing MySQL ===================================================="
+echo
+
+sudo apt install -y mysql-server || { echo "Error installing MySQL"; exit 1; }
+echo "Successfully installed MySQL ======================================="
+echo
+echo
+```
+
+Once the installation is complete, the MySQL server usually starts automatically.
