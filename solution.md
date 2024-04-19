@@ -310,3 +310,33 @@ sudo mv composer.phar /usr/local/bin/composer
 # Make composer executable
 sudo chmod +x /usr/local/bin/composer
 ```
+
+# Clone the Repository and Install Dependencies
+Before cloning the repo I want to delete any content that was in that directory, we will be cloning directly into the `/var/www/html` directory. You could create a new directory for this but I want to keep this whole process as simple as possible.
+
+Now I'll go ahead and clone the repo, I will do this in Apache document root and then install the dependencies with composer.
+
+```sh
+# Clone the git repository and install it's dependencies with composer
+# First remove the content in the /var/www/html directory so we can clone directory into it
+echo
+sudo rm -rf /var/www/html/*
+```
+
+:zap: **SIDENOTE**
+
+I was running into a lot of permission errors when root owned the files in the `/vae/www/html` directory and so I had to change the ownership and my user being the owner. Wherever you see `vagrant` replace that with your username (the one you are using for this deployment).
+
+```sh
+# Add Vagrant user to the www-data group and correct file permissions
+sudo usermod -a -G www-data vagrant
+# Set the group ownership of the /var/www/html directory to www-data
+sudo chown -R vagrant:www-data /var/www/html
+# Grant write permissions to the www-data group for the /var/www/html directory
+sudo chmod -R 775 /var/www/html
+
+# Clone the repo directory in this directory (remember the fullstop at the end of the command, it is very important)
+git clone https://github.com/laravel/laravel.git .
+# Install dependencies with composer
+composer install
+```
