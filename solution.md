@@ -152,7 +152,7 @@ The default configuration of  MySQL is not secure, the root has no password and 
 Ideally we would use the `mysql_secure_installation` script to secure the database but that would require user input and I'm trying to keep this LAMP deployment process as unattended as possible and so I will be using a `here document` that would provide all the necessary responses to the prompts that the script usually presents.
 
 :bulb: **NOTE**
-Another thing to note is that for security purposes I won't be hardcoding my root password in the script. Since this script will be run with Ansible I will save the password in Ansible vault. When we get to the Ansible configuration part of this project you will see how we will walk through the process of adding the password to Ansible vault.
+<span id=av>Another thing to note is that for security purposes I won't be hardcoding my root password in the script. Since this script will be run with Ansible I will save the password in Ansible vault. When we get to the Ansible configuration part of this project you will see how we will walk through the process of adding the password to Ansible vault.</span>
 
 Ansible provides a built-in solution called Ansible Vault for encrypting sensitive data. You can create an encrypted file to store the MySQL root password, and then decrypt it when needed during playbook execution.
 
@@ -265,6 +265,9 @@ echo
 ```sh
 # Enable Apache's URL rewriting and restart Apache
 sudo a2enmod rewrite
+# Incase mpm_event is enabled disable it and enable mpm_forked as that is what php8.2 needs
+sudo a2dismod mpm_event
+sudo a2enmod mpm_prefork
 sudo a2enmod php8.2
 sudo service apache2 restart
 echo "URL rewrite and PHP module enabled and Apache restarted ========================================================================"echo
@@ -323,7 +326,7 @@ echo
 sudo rm -rf /var/www/html/*
 ```
 
-:zap: **SIDENOTE**
+:zap: **SIDE NOTE**
 
 I was running into a lot of permission errors when root owned the files in the `/vae/www/html` directory and so I had to change the ownership and my user being the owner. Wherever you see `vagrant` replace that with your username (the one you are using for this deployment).
 
@@ -335,7 +338,7 @@ sudo chown -R vagrant:www-data /var/www/html
 # Grant write permissions to the www-data group for the /var/www/html directory
 sudo chmod -R 775 /var/www/html
 
-# Clone the repo directory in this directory (remember the fullstop at the end of the command, it is very important)
+# Clone the repo directory in this directory (remember the full stop at the end of the command, it is very important)
 git clone https://github.com/laravel/laravel.git .
 # Install dependencies with composer
 composer install
@@ -459,3 +462,195 @@ To be able to run the script we need to make it executable. Use the command belo
 ```sh
 chmod +x deploylamp.sh
 ```
+
+# Install Ansible
+
+The first part of this task was to automate our deployment with a bash script which we have done up until now, the second part is to run the aforementioned script using an Ansible playbook.
+
+To achieve this, we first need to install Ansible on our server, do this by running the following commands:
+
+```sh
+sudo apt update
+sudo apt install software-properties-common
+sudo add-apt-repository --yes --update ppa:ansible/ansible
+sudo apt install ansible
+```
+
+:warning: EXPERT TIP
+
+You need to have a common user amongst your servers so that Ansible can function properly. Go ahead an create matching users on all your servers and ensure that the users have sudo privilege and can run sudo commands without password. If you don't know how to you can checkout my previous Ansible guide [here](=====================) to see how it's done.
+
+I will be using my vagrant user as I have one on all my servers.
+
+You also need to generate an ssh key on your master server (also called control node, this is the machine from which you will run your Ansible commands) and copy the public key to your slave server(s) (the managed node where you want the final result on). You can also find the steps in [this post](=========================)
+
+# Create Inventory
+
+To use Ansible, all our slave servers (managed nodes) has to be listed in a file known as the inventory. You can name this file anything you choice and the file will contain the ip address or url of the managed nodes.
+
+Create a file, name it anything you want, I will name mine `examhost` as this project is for my exam and enter the ip address of your managed node(s).
+
+You can retrieve the ip address of your server by running the `ip a` command on the server you want it's ip address.
+
+```sh
+vi examhost
+```
+
+Save the ip addresses
+
+```sh
+<machine Ip>
+```
+
+Save your file.
+
+# Configure Ansible Vault
+
+Ansible provides a built-in solution called Ansible Vault for encrypting sensitive data. We will create an encrypted file to store the MySQL root password as discussed <a href=#av>here</a>, and then decrypt it when needed during playbook execution.
+
+Using Ansible Vault allows you to encrypt sensitive data within Ansible playbooks, roles, or other files. First we will create the file with the below command.
+
+When you run the command you will be prompted for a password. After providing a password, the tool will launch whatever editor you have defined with $EDITOR, and defaults to vim if you haven't defined any. Once you are done with the editor session, the file will be saved as encrypted data.
+
+:bulb: EXPERT TIP
+Take note of the directory your at at while creating the vault file, you will enter to enter the file path in your play book. If you already missed it tho no worries you can use the command `find / -name [file name] 2>/dev/null` to find the path
+
+```sh
+ansible-vault create mysql_pass.yml
+```
+
+(image 13)
+
+Ensure you do not forget your password as you will need it when you run your playbook.
+
+When the file opens, enter the below:
+
+```sh
+mysql_root_password: <YourMySQLRootPasswordHere>
+```
+
+To prove that the file has been encrypted, displace the content using the `cat` command and you will see something similar to the below image:
+
+(image 14)
+
+:bulb: TIP
+If you any reason you need to edit an encrypted file in place, use the `ansible-vault edit` command. This command will decrypt the file to a temporary file and allow you to edit the file, saving it back when done and removing the temporary file:
+
+```sh
+ansible-vault edit <file name>
+```
+
+# Configure Your Ansible Configuration File
+
+The default ansible configuration file is in the `ansible.cfg` file however when you open that file you will find it almost empty with instructions on how to populate it.
+
+When you run the ansible --version you will see where your current config file is located.
+
+For what we want to do though we want our configuration very basic and so I will create a new `ansible.cfg` file and populate it with the basic configuration I want to use for this project.
+
+```sh
+vi ansible.cfg
+```
+
+Enter the below into the file:
+
+```sh
+[defaults]
+inventory = examhost
+remote_user = vagrant
+host_key_checking = False
+
+[privilege_escalation]
+become = true
+become_method = sudo
+become_user = root
+become_ack_pass = false
+
+[ssh_connection]
+ssh_args = -o ControlMaster=auto -o ControlPersist=3600s
+```
+
+When I first ran my playbook, the execution took a whole lot of time and so I the `ssh_connection` parameters to try and speed things up.
+
+### Check Connectivity
+
+You can check your connectivity to your server(s) using adhoc commands. So long as you correctly saved the public key of your ssh key in the authorized keys file of your slave node(s) and the slave node ip address in your inventory file is correct your ping should go through.
+
+Check your connection using the command below:
+
+```sh
+ansible all -m ping
+```
+
+The below image confirms that the connection was established successfully
+
+(image 15)
+
+:bulb:
+
+Because we specified our inventory file in the ansible.cfg file and we are running the command from the same directory as where the ansible config file is saved, we do not need to pass the inventory file path along with the `-i` flag with the adhoc command.
+
+Assuming you wanted to run the command from somewhere else this is the command to use:
+
+```sh
+ansible all -i </path/to/inventory> -m ping
+```
+
+# Create Playbook
+
+We have finally gotten to the main event. An Ansible playbook is a YAML file that contains a set of instructions or tasks to be executed by Ansible on remote hosts. 
+
+Playbooks allow you to define configurations, orchestrate multiple tasks, and automate complex deployments in a structured and repeatable way.
+
+```sh
+vi deploylaravel.yml
+```
+
+Add the below to your playbook:
+
+```yml
+---
+- name: Deploy Laravel app and create cron job
+  hosts: all
+  become: false
+  vars_files:
+    - /home/vagrant/ansible/mysql_pass.yml
+  tasks:
+    - name: Run bash script to deploy laravel app
+      ansible.builtin.script: /home/vagrant/deploylamp.sh
+      environment:
+        MYSQL_ROOT_PASSWORD: "{{ mysql_root_password }}"
+
+    - name: Ensure the MAILTO variable is present so we can receive the cron job output
+      cronvar:
+        name: MAILTO
+        value: "cnma.devtest@gmail.com"
+        user: "vagrant"
+
+    - name: Create a cron job to check the server’s uptime every 12 am
+      ansible.builtin.cron:
+        name: Check server uptime
+        minute: "0"
+        hour: "0-23"
+        job: "/usr/bin/uptime | awk '{ print \"[\" strftime(\"\\%Y-\\%m-\\%d\"), \"]\", $0 }' >> /home/vagrant/uptime.log 2>&1"
+        #"date && /usr/bin/uptime && echo >> /home/vagrant/uptime.log"
+```
+
+This playbook has 3 tasks, the first task will execute the script we wrote earlier.
+
+The second is optional to this project, it will set `MAILTO` along with the email address. This simply tells cron to send an email with the output of the cron job to the mentioned email address when every the job runs. Skip this task if you do not want to receive emails concerning the cron job. If you leave this however, you need to have already configured the ability to send email from your terminal. You can check out [this post](https://dev.to/chigozieco/configure-postfix-to-send-email-with-gmails-smtp-from-the-terminal-4cco) to see how to achieve this.
+
+The last task will create a cron job that will run at every 12am and send the output to an `uptime.log` file located in our user's home directory. If you took out the second task, then ensure to add the `user` parameter as seen in the second task in your 3rd task if not it defaults to `root` as the user creating the job.
+
+# Run Playbook
+
+Run the play book now with the below command:
+
+```sh
+ansible-playbook -i <path/to/inventory> <path/to/playbook> --ask-vault-pass
+```
+
+The `--ask-vault-pass` is necessary so that ansible will ask us for our vault password and it can use it to decrypt our secret (our mysql root password) and use it while running our script.
+
+For verbosity, to see the logs as the playbook is executed use the `-v` flag. `-v` being the lowest and `-vvvvv` being the highest.
+
