@@ -536,7 +536,7 @@ To prove that the file has been encrypted, displace the content using the `cat` 
 
 ![encrypted-vault-secret](./images/14.png)
 
-:bulb: TIP
+:bulb: **TIP**
 
 If you any reason you need to edit an encrypted file in place, use the `ansible-vault edit` command. This command will decrypt the file to a temporary file and allow you to edit the file, saving it back when done and removing the temporary file:
 
@@ -685,9 +685,3 @@ They are both the same page just in light mode and dark mode. This was a very tu
 ![dark-mode-laravel](./images/18.png)
 
 And that's it. Exam done and dusted!!!
-
-
-TO DO +====================================================>>>
-
-- Transfer the uptime.log file here, after it gets the monday 00:00 entry
-- Submit exam first thing Monday morning
