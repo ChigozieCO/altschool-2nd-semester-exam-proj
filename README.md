@@ -1,4 +1,6 @@
-# Cloud Engineering Second Semester Examination Project - Task
+![Laravel-app](./images/18.png)
+
+# Cloud Engineering 2nd Semester Examination Project - Task
 
 - Automate the provisioning of two Ubuntu-based servers, named “Master” and “Slave”, using Vagrant.
 
