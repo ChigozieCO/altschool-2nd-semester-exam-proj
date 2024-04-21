@@ -1,0 +1,24 @@
+---
+- name: Deploy Laravel app and create cron job
+  hosts: all
+  become: false
+  vars_files:
+    - /home/vagrant/ansible/mysql_pass.yml
+  tasks:
+    - name: Run bash script to deploy laravel app
+      ansible.builtin.script: /home/vagrant/deploylamp.sh
+      environment:
+        MYSQL_ROOT_PASSWORD: "{{ mysql_root_password }}"
+
+    - name: Ensure the MAILTO variable is present so we can receive the cron job output
+      cronvar:
+        name: MAILTO
+        value: "cnma.devtest@gmail.com"
+        user: "vagrant"
+
+    - name: Create a cron job to check the server’s uptime every 12 am
+      ansible.builtin.cron:
+        name: Check server uptime
+        minute: "0"
+        hour: "0"
+        job: "/usr/bin/uptime | awk '{ print \"[\" strftime(\"\\%Y-\\%m-\\%d\"), \"]\", $0 }' >> /home/vagrant/uptime.log 2>&1"
