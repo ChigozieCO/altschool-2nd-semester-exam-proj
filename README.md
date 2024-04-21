@@ -28,3 +28,6 @@ https://github.com/laravel/laravel
 
 # Solution
 
+I documented the whole process in a [solution.md](./solution.md) file. This file is quite detailed as the contains the step by step process and explains some of my logic as well as screenshots.
+
+I intend to public it as a technical article on my [dev.to page](https://dev.to/chigozieco).
