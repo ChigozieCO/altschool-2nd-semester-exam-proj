@@ -662,6 +662,14 @@ What a successful playbook execution looks like:
 
 ![successful-run](./images/16.png)
 
+You can confirm that the cronjob was successfully set by listing the crontab for that user, cronjobs are user specific so ensure you run the command for the user you used.
+
+```sh
+crontab -l
+```
+
+![cronjob](./images/20.png)
+
 # Laravel App Homepage
 
 After successfully going through this process you should see either of these dispayed when you enter your IP address in your browser.
@@ -677,3 +685,9 @@ They are both the same page just in light mode and dark mode. This was a very tu
 ![dark-mode-laravel](./images/18.png)
 
 And that's it. Exam done and dusted!!!
+
+
+TO DO +====================================================>>>
+
+- Transfer the uptime.log file here, after it gets the monday 00:00 entry
+- Submit exam first thing Monday morning
