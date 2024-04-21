@@ -52,9 +52,9 @@ Vagrant.configure("2") do |config|
 end
 ```
 
-In the VagrantFile above I simply specified the type of base box with which each VM would be created, I ensure they used a private network and they get their ip address from the dhcp server. I also specified the name and hostname of each VM.
+In the [VagrantFile](./Vagrantfile) I simply specified the type of base box with which each VM would be created, I ensure they used a private network and they get their ip address from the dhcp server. I also specified the name and hostname of each VM.
 
-Another thing I did was to hard code the host ssh port so that deal with the ssh clash that will happen from the jump, another reason I did this is so that the port doesn't conflict with other VMs I have on my laptop.
+Another thing I did was to hard code the host ssh port so that I deal with the ssh clash that will happen, from the jump, another reason I did this is so that the port doesn't conflict with other VMs I have on my laptop.
 
 To provision the VMs I ran the command 
 
@@ -68,7 +68,7 @@ From the images below you can see that both my master and slave machines were su
 
 ![Slave-server](./images/4.png)
 
-To access it and start working with it I ssh into then by specifying their names, as shown below
+To access it and start working with it I ssh into them by specifying their names, as shown below
 
 ```sh
 vagrant ssh master
@@ -83,9 +83,9 @@ A LAMP stack is is an acronym for the operating system, Linux; the web server, A
 
 This is a very common stack developers use to build websites and web applications.
 
-The task asked that we write a script that would be used to automate the installation of the LAMP stack. With this script the LAMP stack deployment as well as the Laravel application deployment will be fully automated, this script will be written in a way as not to require any user input at all. I will try to example my logic along the way.
+The task asked that we write a script that would be used to automate the installation of the LAMP stack. With this script the LAMP stack deployment as well as the Laravel application deployment will be fully automated, this script will be written in a way as not to require any user input at all. I will try to explain my logic along the way.
 
-Find the full script (here)[], to create my script create a new file with the vi editor:
+Find the full script [here](./deploylamp.sh), to create my script create a new file with the vi editor:
 
 ```sh
 vi deploylamp.sh
@@ -93,7 +93,7 @@ vi deploylamp.sh
 
 ## Install Apache
 
-To begin, I want this script to stop running whenever it encounters an error as the successful deployment of the Laravel application is dependent on all the components of this script being present in the server. To accomplish this we will use the `set -e` command, start you script that way.
+To begin, I want this script to stop running whenever it encounters an error at any point, as the successful deployment of the Laravel application is dependent on all the components of this script being present in the server. To accomplish this we will use the `set -e` command, start you script that way.
 
 ```sh
 #!/bin/bash
@@ -109,9 +109,7 @@ Next we will update the apt repository so that our packages are up to date.
 sudo apt update
 ```
 
-We finally get to the beginning of the main event, now we will add the command that installs Apache to our script install, as earlier mentioned, apache is a very popular webserver used by developers.
-
-I want the script to stop executing if at any point it encounters an error so I will add the `set -e` command at the top of the script.
+We finally get to the beginning of the main event, now we will add the command that installs Apache to our script, as earlier mentioned, apache is a very popular webserver used by developers.
 
 To install apache add the command below to your script
 
@@ -157,7 +155,7 @@ Ideally we would use the `mysql_secure_installation` script to secure the databa
 
 <span id=av>Another thing to note is that for security purposes I won't be hardcoding my root password in the script. Since this script will be run with Ansible I will save the password in Ansible vault. When we get to the Ansible configuration part of this project you will see how we will walk through the process of adding the password to Ansible vault.</span>
 
-Ansible provides a built-in solution called Ansible Vault for encrypting sensitive data. You can create an encrypted file to store the MySQL root password, and then decrypt it when needed during playbook execution.
+Ansible provides a built-in solution called Ansible Vault for encrypting sensitive data. You can create an encrypted file to store the MySQL root password, and then Ansible will decrypt it when needed during playbook execution.
 
 The way this will work is that ansible will decrypt the password, and pass as an env variable as `MYSQL_ROOT_PASSWORD` which the bash script will then read and use while running the script.
 
@@ -270,7 +268,8 @@ sudo a2dismod mpm_event #In one of my tests this was enabled by default but php 
 sudo a2enmod mpm_prefork 
 sudo a2enmod php8.2
 sudo service apache2 restart
-echo "URL rewrite and PHP module enabled and Apache restarted ========================================================================"echo
+echo "URL rewrite and PHP module enabled and Apache restarted ========================================================================"
+echo
 ```
 
 Enabling the rewrite module in Apache (`a2enmod rewrite`) is typically necessary for Laravel applications and many other web applications that use URL rewriting for routing and clean URLs.
@@ -315,6 +314,9 @@ sudo chmod +x /usr/local/bin/composer
 ```
 
 # Clone the Repository and Install Dependencies
+
+The repo we are cloning is the official Laravel application repo, you can find it [here](https://github.com/laravel/laravel).
+
 Before cloning the repo I want to delete any content that was in that directory, we will be cloning directly into the `/var/www/html` directory. You could create a new directory for this but I want to keep this whole process as simple as possible.
 
 Now I'll go ahead and clone the repo, I will do this in Apache document root and then install the dependencies with composer.
@@ -382,7 +384,7 @@ We also need to update the `.env` file with our database credentials and update 
 
 Like you might have already noticed I am trying to make this script as unattended as possible and so I will use `sed` to search and replace the `APP_URL` line in the `.env` file with the actual value I want and then echo the other database credentials I want in the file.
 
-This will allow my updating the `env` file be as unattended as possible. Add the following to your script, ensure to replace with your own credentials where necessary.
+This will allow my updating the `.env` file be as unattended as possible. Add the following to your script, ensure to replace with your own credentials where necessary.
 
 ```sh
 # Change the APP_URL value to be the IP address of your server
@@ -393,11 +395,11 @@ ip_address=$(hostname -I | awk '{print $2}')
 sed -i "s/^APP_URL=.*/APP_URL=http:\/\/$ip_address/" /var/www/html/.env
 ```
 
-- `hostname -I | awk '{print $1}'` retrieves the IP address of the machine.
+- `hostname -I | awk '{print $2}'` retrieves the IP address of the machine.
 
 - `hostname -I` gets a list of IP addresses associated with the hostname, and `awk '{print $2}'` selects the second IP address from the list. (I prefer to use the second that comes up on my server as that is the unique one for me, you can change 2 to 1 as you see fit).
 
-We also need to add some database configuration parameters, we will `sed` to replace what needs replacing and echo the new items into the file.
+We also need to add some database configuration parameters, we will use `sed` to replace what needs replacing and echo the new items into the file.
 
 Add the following to your script
 
@@ -476,9 +478,9 @@ sudo add-apt-repository --yes --update ppa:ansible/ansible
 sudo apt install ansible
 ```
 
-:warning: EXPERT TIP
+:warning: **EXPERT TIP**
 
-You need to have a common user amongst your servers so that Ansible can function properly. Go ahead an create matching users on all your servers and ensure that the users have sudo privilege and can run sudo commands without password. If you don't know how to you can checkout my previous Ansible guide [here](=====================) to see how it's done.
+You need to have a common user amongst your servers so that Ansible can function properly. Go ahead and create matching users on all your servers and ensure that the users have sudo privilege and can run sudo commands without password. If you don't know how to you can checkout my previous Ansible guide [here](=====================) to see how it's done.
 
 I will be using my vagrant user as I have one on all my servers.
 
@@ -512,8 +514,9 @@ Using Ansible Vault allows you to encrypt sensitive data within Ansible playbook
 
 When you run the command you will be prompted for a password. After providing a password, the tool will launch whatever editor you have defined with $EDITOR, and defaults to vim if you haven't defined any. Once you are done with the editor session, the file will be saved as encrypted data.
 
-:bulb: EXPERT TIP
-Take note of the directory your at at while creating the vault file, you will enter to enter the file path in your play book. If you already missed it tho no worries you can use the command `find / -name [file name] 2>/dev/null` to find the path
+:bulb: **EXPERT TIP**
+
+Take note of the directory you're at while creating the vault file, you will need to enter the file path in your play book. If you already missed it tho no worries you can use the command `find / -name [file name] 2>/dev/null` to find the path
 
 ```sh
 ansible-vault create mysql_pass.yml
@@ -587,7 +590,7 @@ The below image confirms that the connection was established successfully
 
 ![sucessful-ping](./images/15.png)
 
-:bulb:
+:bulb: **EXPERT TIP**
 
 Because we specified our inventory file in the ansible.cfg file and we are running the command from the same directory as where the ansible config file is saved, we do not need to pass the inventory file path along with the `-i` flag with the adhoc command.
 
