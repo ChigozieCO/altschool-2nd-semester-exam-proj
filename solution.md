@@ -10,7 +10,7 @@ The first this I do is initialize the box, the box I'm using is `ubuntu/jammy64`
 vagrant init -m ubuntu/jammy64
 ```
 
-(image 1)
+![Vagrantup](./images/1.png)
 
 When I open the VagrantFile to edit it, we can see that it has just the basic configuration without all the comments.
 
@@ -18,7 +18,7 @@ When I open the VagrantFile to edit it, we can see that it has just the basic co
 vi VagrantFile
 ```
 
-(image 2)
+![Vagrantfile](./images/2.png)
 
 To configure my VMs, I will enter the below code into my VagrantFile.
 
@@ -64,7 +64,9 @@ vagrant up
 
 From the images below you can see that both my master and slave machines were successfully provisioned.
 
-(image 3 and 4 )
+![Master-server](./images/3.png)
+
+![Slave-server](./images/4.png)
 
 To access it and start working with it I ssh into then by specifying their names, as shown below
 
@@ -73,7 +75,7 @@ vagrant ssh master
 vagrant ssh slave
 ```
 
-(images 5)
+![master&slave-ssh](./images/5.png)
 
 # Bash Script to Deploy LAMP Stack
 
@@ -152,11 +154,12 @@ The default configuration of  MySQL is not secure, the root has no password and 
 Ideally we would use the `mysql_secure_installation` script to secure the database but that would require user input and I'm trying to keep this LAMP deployment process as unattended as possible and so I will be using a `here document` that would provide all the necessary responses to the prompts that the script usually presents.
 
 :bulb: **NOTE**
+
 <span id=av>Another thing to note is that for security purposes I won't be hardcoding my root password in the script. Since this script will be run with Ansible I will save the password in Ansible vault. When we get to the Ansible configuration part of this project you will see how we will walk through the process of adding the password to Ansible vault.</span>
 
 Ansible provides a built-in solution called Ansible Vault for encrypting sensitive data. You can create an encrypted file to store the MySQL root password, and then decrypt it when needed during playbook execution.
 
-The way this will work is that ansible will decrypt the password, save it in a temporary location from which it will be passed as an env variable as `MYSQL_ROOT_PASSWORD` which the bash script will then read and use while running the script.
+The way this will work is that ansible will decrypt the password, and pass as an env variable as `MYSQL_ROOT_PASSWORD` which the bash script will then read and use while running the script.
 
 This way everything is safe and secure. 
 
@@ -165,9 +168,6 @@ Add the below to your script:
 ```sh
 # Configure MySQL Server automatically, we won't hardcode the root password, it will be read from ansible vault
 echo "Now configuring MySQL Server ======================================="
-
-# Set MySQL root password from environment variable, since this script is run with ansible, ansible will first decrypt the password from it's vault and save it in a temp location from which it will be read.
-MYSQL_ROOT_PASSWORD="$MYSQL_ROOT_PASSWORD"
 
 # Main MySQL configuration
 sudo mysql <<EOF
@@ -212,7 +212,7 @@ PHP is a general-purpose scripting language, well-suited for Web development sin
 
 Before installing PHP I will disable any php module I had previously installed, I found this step necessary because while testing my script, after successfully deploying the Laravel application the app didn't come up I kept getting the error shown below.
 
-(image 6)
+![php-version-error](./images/6.png)
 
 Upon further investigation after running `apachectl -M | grep php` I found out that apache was using a lower version of php (7.4) not the latest 8.2 I had just installed.
 
@@ -266,8 +266,8 @@ echo
 # Enable Apache's URL rewriting and restart Apache
 sudo a2enmod rewrite
 # Incase mpm_event is enabled disable it and enable mpm_forked as that is what php8.2 needs
-sudo a2dismod mpm_event
-sudo a2enmod mpm_prefork
+sudo a2dismod mpm_event #In one of my tests this was enabled by default but php needed the prefork and it caused errors for me.
+sudo a2enmod mpm_prefork 
 sudo a2enmod php8.2
 sudo service apache2 restart
 echo "URL rewrite and PHP module enabled and Apache restarted ========================================================================"echo
@@ -328,7 +328,7 @@ sudo rm -rf /var/www/html/*
 
 :zap: **SIDE NOTE**
 
-I was running into a lot of permission errors when root owned the files in the `/vae/www/html` directory and so I had to change the ownership and my user being the owner. Wherever you see `vagrant` replace that with your username (the one you are using for this deployment).
+I was running into a lot of permission errors when root owned the files in the `/var/www/html` directory and so I had to change the ownership and my user being the owner. Wherever you see `vagrant` replace that with your username (the one you are using for this deployment).
 
 ```sh
 # Add Vagrant user to the www-data group and correct file permissions
@@ -366,7 +366,7 @@ Honestly this step could have been carried out right before we create our `.env`
 
 If your `/var/www/html/storage` file and your `/var/www/html/bootstrap/cache` files do not belong to the `www-data` user you experience the error message below because the `www-data` user which Apache uses for web related activities won't have the necessary permissions that Laravel needs to fully function.
 
-(image 7)
+![permission-denied-error](./images/7.png)
 
 Add the below to your script to change the ownership of those directories.
 
@@ -435,11 +435,11 @@ sudo systemctl restart apache2
 # Run Database Migration
 The last step is to run your migrations to build your application’s database tables. This step is necessary if you don't want to get the error message below
 
-(image 8)
+![db-error](./images/8.png)
 
 Ideally when you run the `migrate` command, as we will next, your database gets created (if it previously didn't exist) along with the tables and necessary schema. 
 
-(image 10)
+![cli-prompt](./images/10.png)
 
 Note however that this command does not have a built-in `-y` flag to automatically accept the database creation and so will require use input which is why I went back and added the creation of the database in the MySQL installation (you don't have to sweat it).
 
@@ -519,7 +519,7 @@ Take note of the directory your at at while creating the vault file, you will en
 ansible-vault create mysql_pass.yml
 ```
 
-(image 13)
+![ansible-vault](./images/13.png)
 
 Ensure you do not forget your password as you will need it when you run your playbook.
 
@@ -531,9 +531,10 @@ mysql_root_password: <YourMySQLRootPasswordHere>
 
 To prove that the file has been encrypted, displace the content using the `cat` command and you will see something similar to the below image:
 
-(image 14)
+![encrypted-vault-secret](./images/14.png)
 
 :bulb: TIP
+
 If you any reason you need to edit an encrypted file in place, use the `ansible-vault edit` command. This command will decrypt the file to a temporary file and allow you to edit the file, saving it back when done and removing the temporary file:
 
 ```sh
@@ -584,7 +585,7 @@ ansible all -m ping
 
 The below image confirms that the connection was established successfully
 
-(image 15)
+![sucessful-ping](./images/15.png)
 
 :bulb:
 
@@ -631,7 +632,7 @@ Add the below to your playbook:
       ansible.builtin.cron:
         name: Check server uptime
         minute: "0"
-        hour: "0-23"
+        hour: "0"
         job: "/usr/bin/uptime | awk '{ print \"[\" strftime(\"\\%Y-\\%m-\\%d\"), \"]\", $0 }' >> /home/vagrant/uptime.log 2>&1"
         #"date && /usr/bin/uptime && echo >> /home/vagrant/uptime.log"
 ```
@@ -654,3 +655,22 @@ The `--ask-vault-pass` is necessary so that ansible will ask us for our vault pa
 
 For verbosity, to see the logs as the playbook is executed use the `-v` flag. `-v` being the lowest and `-vvvvv` being the highest.
 
+What a successful playbook execution looks like:
+
+![successful-run](./images/16.png)
+
+# Laravel App Homepage
+
+After successfully going through this process you should see either of these dispayed when you enter your IP address in your browser.
+
+They are both the same page just in light mode and dark mode. This was a very tumultuous ride. Take note of my IP address in the images.
+
+###  Light mode
+
+![light-mode-laravel](./images/17.png)
+
+### Dark mode
+
+![dark-mode-laravel](./images/18.png)
+
+And that's it. Exam done and dusted!!!
