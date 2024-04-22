@@ -684,4 +684,6 @@ They are both the same page just in light mode and dark mode. This was a very tu
 
 ![dark-mode-laravel](./images/18.png)
 
+Link to a copy of the [uptime.log file](./uptime.log).
+
 And that's it. Exam done and dusted!!!
