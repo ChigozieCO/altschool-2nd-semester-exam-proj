@@ -480,11 +480,11 @@ sudo apt install ansible
 
 :warning: **EXPERT TIP**
 
-You need to have a common user amongst your servers so that Ansible can function properly. Go ahead and create matching users on all your servers and ensure that the users have sudo privilege and can run sudo commands without password. If you don't know how to you can checkout my previous Ansible guide [here](=====================) to see how it's done.
+You need to have a common user amongst your servers so that Ansible can function properly. Go ahead and create matching users on all your servers and ensure that the users have sudo privilege and can run sudo commands without password. If you don't know how to you can checkout my previous Ansible guide [here](https://dev.to/chigozieco/install-apache-web-server-and-serve-a-custom-webpage-using-ansible-3n73#zap-create-a-common-user) to see how it's done.
 
 I will be using my vagrant user as I have one on all my servers.
 
-You also need to generate an ssh key on your master server (also called control node, this is the machine from which you will run your Ansible commands) and copy the public key to your slave server(s) (the managed node where you want the final result on). You can also find the steps in [this post](=========================)
+You also need to generate an ssh key on your master server (also called control node, this is the machine from which you will run your Ansible commands) and copy the public key to your slave server(s) (the managed node where you want the final result on). You can also find the steps in [this post](https://dev.to/chigozieco/install-apache-web-server-and-serve-a-custom-webpage-using-ansible-3n73#zap-generate-ssh-keys-on-the-control-node)
 
 # Create Inventory
 
